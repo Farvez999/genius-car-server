@@ -15,6 +15,22 @@ app.use(express.json());
 const uri = "mongodb+srv://geniusDBUser:9zn90U9sHoP2QvJF@cluster0.mordayw.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
+
 async function run() {
     try {
         const serviceCollection = client.db('geniusCar').collection('services');
@@ -42,7 +58,8 @@ async function run() {
         })
 
         //all order
-        app.get('/orders', async (req, res) => {
+        app.get('/orders', verifyJWT, async (req, res) => {
+
             let query = {};
             if (req.query.email) {
                 query = {
