@@ -44,8 +44,9 @@ async function run() {
         })
 
         app.get('/services', async (req, res) => {
-            const query = {}
-            const cursor = serviceCollection.find(query);
+            const query = { price: { $gt: 100, $lt: 300 } }
+            const order = req.query.order === 'asc' ? 1 : -1;
+            const cursor = serviceCollection.find(query).sort({ 'price': order });
             const services = await cursor.toArray();
             res.send(services);
         });
@@ -59,6 +60,12 @@ async function run() {
 
         //all order
         app.get('/orders', verifyJWT, async (req, res) => {
+
+            //JWT  Token
+            const decoded = req.decoded;
+            if (decoded.email !== req.query.email) {
+                res.status(403).send({ message: 'unauthorized access' })
+            }
 
             let query = {};
             if (req.query.email) {
